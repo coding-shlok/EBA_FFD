@@ -1,0 +1,13 @@
+\begin{table}[htbp]
+\centering
+\caption{Scalability across federation size. Total data is held fixed, so per-bank data shrinks as banks are added and per-bank DP noise $\bar{\sigma}$ rises. The KMeansSMOTE column reports how many banks could actually support cluster-based oversampling.}
+\label{tab:scaling}
+\begin{tabular}{lcccccccc}
+\toprule
+Banks & Precision & Recall & F1 & ROC-AUC & PR-AUC & $\bar{\sigma}$ & s/round & KMeansSMOTE \\
+\midrule
+4 & 0.8063 $\pm$ 0.0120 & 0.7194 $\pm$ 0.0649 & 0.7593 $\pm$ 0.0310 & \textbf{0.9603 $\pm$ 0.0119} & \textbf{0.6930 $\pm$ 0.0168} & 1.960 & 75.9 & 1/4 \\
+8 & \textbf{0.8146 $\pm$ 0.0294} & \textbf{0.7296 $\pm$ 0.0794} & \textbf{0.7678 $\pm$ 0.0311} & 0.9500 $\pm$ 0.0013 & 0.6776 $\pm$ 0.0351 & 2.386 & 78.5 & 1/8 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,15 @@
+\begin{table}[htbp]
+\centering
+\caption{Per-bank DP-SGD calibration. Every bank is tuned to a common target $\varepsilon$; smaller banks receive proportionally more noise because each record participates in a larger fraction of batches.}
+\label{tab:privacy}
+\begin{tabular}{lcccccc}
+\toprule
+Bank & $n_k$ & $q_k$ & Steps & $\sigma_k$ & $\delta_k$ & $\varepsilon$ spent \\
+\midrule
+0 & 11,379 & 0.02250 & 450 & 1.0596 & 1.0e-05 & 2.959 \\
+1 & 409 & 0.62592 & 20 & 4.3652 & 1.0e-05 & 2.369 \\
+2 & 29,780 & 0.00860 & 1170 & 0.8398 & 1.0e-05 & 2.990 \\
+3 & 10,110 & 0.02532 & 400 & 1.0986 & 1.0e-05 & 2.951 \\
+\bottomrule
+\end{tabular}
+\end{table}

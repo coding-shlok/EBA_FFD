@@ -1,0 +1,19 @@
+\begin{table}[htbp]
+\centering
+\caption{Component ablation. Each variant removes exactly one component from the full system. $\Delta$F1 is relative to the full system.}
+\label{tab:ablation}
+\begin{tabular}{lcccccc}
+\toprule
+Variant & Precision & Recall & F1 & ROC-AUC & PR-AUC & $\Delta$F1 \\
+\midrule
+Full system (proposed: CNN, no BiLSTM) & 0.8063 $\pm$ 0.0120 & 0.7194 $\pm$ 0.0649 & 0.7593 $\pm$ 0.0310 & 0.9603 $\pm$ 0.0119 & 0.6930 $\pm$ 0.0168 & ref \\
++ BiLSTM block (discarded recurrent variant) & 0.6400 $\pm$ 0.0470 & 0.6224 $\pm$ 0.1010 & 0.6305 $\pm$ 0.0749 & 0.9414 $\pm$ 0.0152 & 0.6090 $\pm$ 0.0829 & -0.1289 \\
+− CNN block & 0.0255 $\pm$ 0.0200 & 0.0459 $\pm$ 0.0505 & 0.0320 $\pm$ 0.0301 & 0.5405 $\pm$ 0.1511 & 0.0054 $\pm$ 0.0027 & -0.7273 \\
+− KMeans-SMOTE/ENN balancing & 0.0177 $\pm$ 0.0250 & 0.1276 $\pm$ 0.1804 & 0.0311 $\pm$ 0.0440 & 0.6576 $\pm$ 0.3123 & 0.0109 $\pm$ 0.0134 & -0.7282 \\
+− Focal Loss (plain BCE) & 0.8043 $\pm$ 0.0293 & 0.7245 $\pm$ 0.0722 & 0.7605 $\pm$ 0.0268 & 0.9600 $\pm$ 0.0131 & 0.6808 $\pm$ 0.0001 & +0.0012 \\
+− Differential privacy (no guarantee)$^{\dagger}$ & 0.7945 $\pm$ 0.0010 & 0.7296 $\pm$ 0.0794 & 0.7595 $\pm$ 0.0428 & \textbf{0.9662 $\pm$ 0.0180} & 0.6867 $\pm$ 0.0215 & +0.0002 \\
+− Adaptive aggregation (vanilla FedAvg) & 0.8063 $\pm$ 0.0120 & 0.7194 $\pm$ 0.0649 & 0.7593 $\pm$ 0.0310 & 0.9603 $\pm$ 0.0119 & 0.6930 $\pm$ 0.0168 & +0.0000 \\
+− CNN and BiLSTM (MLP head only) & \textbf{0.8203 $\pm$ 0.0016} & \textbf{0.7449 $\pm$ 0.0577} & \textbf{0.7802 $\pm$ 0.0310} & 0.9425 $\pm$ 0.0318 & \textbf{0.6949 $\pm$ 0.0549} & +0.0208 \\
+\bottomrule
+\end{tabular}
+\end{table}

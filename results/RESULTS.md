@@ -1,0 +1,53 @@
+# EBA-FFD v2 — Experimental Results
+
+## Table 1 — Comparison against baselines
+
+| Method | Precision | Recall | F1 | ROC-AUC | PR-AUC | p (F1) |
+|---|---|---|---|---|---|---|
+| EBA-FFD (ours, DP) | 0.8063 ± 0.0120 | 0.7194 ± 0.0649 | 0.7593 ± 0.0310 | 0.9603 ± 0.0119 | 0.6930 ± 0.0168 | ref |
+| XGBoost (centralized)$^{\dagger}$ | 0.8312 ± 0.0058 | 0.7041 ± 0.0289 | 0.7623 ± 0.0193 | 0.9767 ± 0.0045 | 0.6978 ± 0.0014 | 0.782 |
+| Local-only (no collaboration)$^{\dagger}$ | 0.8065 ± 0.0135 | 0.7232 ± 0.0379 | 0.7618 ± 0.0273 | 0.9655 ± 0.0017 | 0.6887 ± 0.0026 | 0.523 |
+| Logistic Regression (centralized)$^{\dagger}$ | 0.7467 ± 0.0080 | 0.8265 ± 0.0289 | 0.7844 ± 0.0086 | 0.9531 ± 0.0063 | 0.6558 ± 0.0114 | 0.359 |
+| CNN (centralized)$^{\dagger}$ | 0.7924 ± 0.0073 | 0.7194 ± 0.0505 | 0.7535 ± 0.0244 | 0.9731 ± 0.0129 | 0.6937 ± 0.0118 | 0.429 |
+| FedAvg + DP | 0.8063 ± 0.0120 | 0.7194 ± 0.0649 | 0.7593 ± 0.0310 | 0.9603 ± 0.0119 | 0.6930 ± 0.0168 | — |
+| FedProx + DP | 0.8036 ± 0.0051 | 0.7296 ± 0.0649 | 0.7639 ± 0.0334 | 0.9642 ± 0.0092 | 0.6966 ± 0.0144 | 0.226 |
+
+## Table 4 — Per-bank differential privacy calibration
+
+| Bank | $n_k$ | $q_k$ | Steps | $\sigma_k$ | $\delta_k$ | $\varepsilon$ spent |
+|---|---|---|---|---|---|---|
+| 0 | 11,379 | 0.02250 | 450 | 1.0596 | 1.0e-05 | 2.959 |
+| 1 | 409 | 0.62592 | 20 | 4.3652 | 1.0e-05 | 2.369 |
+| 2 | 29,780 | 0.00860 | 1170 | 0.8398 | 1.0e-05 | 2.990 |
+| 3 | 10,110 | 0.02532 | 400 | 1.0986 | 1.0e-05 | 2.951 |
+
+## Table 2 — Component ablation (stationary)
+
+| Variant | Precision | Recall | F1 | ROC-AUC | PR-AUC | $\Delta$F1 |
+|---|---|---|---|---|---|---|
+| Full system (proposed: CNN, no BiLSTM) | 0.8063 ± 0.0120 | 0.7194 ± 0.0649 | 0.7593 ± 0.0310 | 0.9603 ± 0.0119 | 0.6930 ± 0.0168 | ref |
+| + BiLSTM block (discarded recurrent variant) | 0.6400 ± 0.0470 | 0.6224 ± 0.1010 | 0.6305 ± 0.0749 | 0.9414 ± 0.0152 | 0.6090 ± 0.0829 | -0.1289 |
+| − CNN block | 0.0255 ± 0.0200 | 0.0459 ± 0.0505 | 0.0320 ± 0.0301 | 0.5405 ± 0.1511 | 0.0054 ± 0.0027 | -0.7273 |
+| − KMeans-SMOTE/ENN balancing | 0.0177 ± 0.0250 | 0.1276 ± 0.1804 | 0.0311 ± 0.0440 | 0.6576 ± 0.3123 | 0.0109 ± 0.0134 | -0.7282 |
+| − Focal Loss (plain BCE) | 0.8043 ± 0.0293 | 0.7245 ± 0.0722 | 0.7605 ± 0.0268 | 0.9600 ± 0.0131 | 0.6808 ± 0.0001 | +0.0012 |
+| − Differential privacy (no guarantee)$^{\dagger}$ | 0.7945 ± 0.0010 | 0.7296 ± 0.0794 | 0.7595 ± 0.0428 | 0.9662 ± 0.0180 | 0.6867 ± 0.0215 | +0.0002 |
+| − Adaptive aggregation (vanilla FedAvg) | 0.8063 ± 0.0120 | 0.7194 ± 0.0649 | 0.7593 ± 0.0310 | 0.9603 ± 0.0119 | 0.6930 ± 0.0168 | +0.0000 |
+| − CNN and BiLSTM (MLP head only) | 0.8203 ± 0.0016 | 0.7449 ± 0.0577 | 0.7802 ± 0.0310 | 0.9425 ± 0.0318 | 0.6949 ± 0.0549 | +0.0208 |
+
+## Table 2b — Adaptive aggregation under injected drift
+
+| Variant | Precision | Recall | F1 | ROC-AUC | PR-AUC | $\Delta$F1 |
+|---|---|---|---|---|---|---|
+| Full system (proposed: CNN, no BiLSTM) | 0.8063 ± 0.0120 | 0.7194 ± 0.0649 | 0.7593 ± 0.0310 | 0.9603 ± 0.0119 | 0.6930 ± 0.0168 | ref |
+| − Adaptive aggregation (vanilla FedAvg) | 0.8063 ± 0.0120 | 0.7194 ± 0.0649 | 0.7593 ± 0.0310 | 0.9603 ± 0.0119 | 0.6930 ± 0.0168 | +0.0000 |
+
+## Table 3 — Scalability
+
+| Banks | Precision | _Precision_mean | Recall | _Recall_mean | F1 | _F1_mean | ROC-AUC | _ROC-AUC_mean | PR-AUC | _PR-AUC_mean | $\bar{\sigma}$ | s/round | KMeansSMOTE |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 4 | 0.8063 ± 0.0120 | 0.8063435776201733 | 0.7194 ± 0.0649 | 0.7193877551020408 | 0.7593 ± 0.0310 | 0.7593400837988826 | 0.9603 ± 0.0119 | 0.9602785701365522 | 0.6930 ± 0.0168 | 0.6929646457238783 | 1.960 | 75.9 | 1/4 |
+| 8 | 0.8146 ± 0.0294 | 0.8146287354821871 | 0.7296 ± 0.0794 | 0.7295918367346939 | 0.7678 ± 0.0311 | 0.7677531508039983 | 0.9500 ± 0.0013 | 0.9499860210685287 | 0.6776 ± 0.0351 | 0.6775752950400056 | 2.386 | 78.5 | 1/8 |
+
+---
+
+**†** marks methods with no privacy guarantee (raw data pooled or privacy ignored). These are utility upper bounds that quantify the cost of privacy, not competing systems. FedProx at matched ε is the like-for-like federated comparison.

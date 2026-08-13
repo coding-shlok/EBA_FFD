@@ -1,0 +1,265 @@
+{
+  "config": {
+    "num_rounds": 2,
+    "local_epochs": 1,
+    "batch_size": 256,
+    "lr": 0.001,
+    "num_clients": 3,
+    "dirichlet_alpha": 0.5,
+    "aggregation": "adaptive",
+    "fedprox_mu": 0.01,
+    "drift_detector": {
+      "delta": 0.005,
+      "threshold": 0.05,
+      "alpha": 0.9999,
+      "min_rounds": 3
+    },
+    "trust_beta": 2.0,
+    "trust_min": 0.2,
+    "trust_recovery": 0.3,
+    "dp_mode": "opacus",
+    "target_epsilon": 3.0,
+    "max_grad_norm": 1.0,
+    "delta_rule": "1/n",
+    "model": {
+      "use_cnn": 1,
+      "use_lstm": 1,
+      "cnn_channels": 64,
+      "cnn_kernel": 3,
+      "lstm_hidden": 64,
+      "lstm_layers": 2,
+      "dropout": 0.3,
+      "norm_type": "group",
+      "dp_lstm": 1
+    },
+    "loss": "focal",
+    "focal_alpha": 0.25,
+    "focal_gamma": 2.0,
+    "balancing": "kmeans_smote_enn",
+    "sampling_strategy": 0.3,
+    "test_size": 0.2,
+    "subsample_frac": 0.05,
+    "min_fraud_per_client": 10,
+    "seeds": [
+      42,
+      43,
+      44
+    ],
+    "seed": 42,
+    "drift_enabled": 1,
+    "drift_round": 2,
+    "drift_clients": [
+      0
+    ],
+    "drift_mode": "covariate_shift",
+    "drift_level": 0.5,
+    "device": "cpu",
+    "visualize": 1,
+    "verbose": 1
+  },
+  "final_metrics": {
+    "round": 2,
+    "threshold": 0.4125461009120942,
+    "accuracy": 0.9985955056179775,
+    "precision": 1.0,
+    "recall": 0.2,
+    "f1": 0.3333333333333333,
+    "auc": 0.9997889553288779,
+    "pr_auc": 0.8766666666666667,
+    "f1_at_0.5": 0.0
+  },
+  "best_metrics": {
+    "round": 1,
+    "threshold": 0.36117236324667934,
+    "accuracy": 0.9985955056179775,
+    "precision": 1.0,
+    "recall": 0.2,
+    "f1": 0.3333333333333333,
+    "auc": 0.9992965177629265,
+    "pr_auc": 0.6866666666666665,
+    "f1_at_0.5": 0.0
+  },
+  "round_metrics": [
+    {
+      "round": 1,
+      "threshold": 0.36117236324667934,
+      "accuracy": 0.9985955056179775,
+      "precision": 1.0,
+      "recall": 0.2,
+      "f1": 0.3333333333333333,
+      "auc": 0.9992965177629265,
+      "pr_auc": 0.6866666666666665,
+      "f1_at_0.5": 0.0
+    },
+    {
+      "round": 2,
+      "threshold": 0.4125461009120942,
+      "accuracy": 0.9985955056179775,
+      "precision": 1.0,
+      "recall": 0.2,
+      "f1": 0.3333333333333333,
+      "auc": 0.9997889553288779,
+      "pr_auc": 0.8766666666666667,
+      "f1_at_0.5": 0.0
+    }
+  ],
+  "privacy_plan": [
+    {
+      "client_id": 0,
+      "n_samples": 391,
+      "sigma": 2.2509765625,
+      "epsilon": 3.0,
+      "delta": 1e-05,
+      "sample_rate": 0.6547314578005116,
+      "steps": 4,
+      "dp": 1
+    },
+    {
+      "client_id": 1,
+      "n_samples": 1206,
+      "sigma": 1.513671875,
+      "epsilon": 3.0,
+      "delta": 1e-05,
+      "sample_rate": 0.21227197346600332,
+      "steps": 10,
+      "dp": 1
+    },
+    {
+      "client_id": 2,
+      "n_samples": 11311,
+      "sigma": 0.84716796875,
+      "epsilon": 3.0,
+      "delta": 1e-05,
+      "sample_rate": 0.022632835293077535,
+      "steps": 90,
+      "dp": 1
+    }
+  ],
+  "epsilon_spent": [
+    2.404224174569698,
+    2.840831865540839,
+    2.959804375357969
+  ],
+  "balancing_info": [
+    {
+      "requested": "kmeans_smote_enn",
+      "applied": "smote_enn",
+      "fallback": "KMeansSMOTE failed: RuntimeError",
+      "n_before": 311,
+      "fraud_before": 5,
+      "n_after": 391,
+      "fraud_after": 91,
+      "client_id": 0
+    },
+    {
+      "requested": "kmeans_smote_enn",
+      "applied": "smote_enn",
+      "fallback": "KMeansSMOTE failed: RuntimeError",
+      "n_before": 938,
+      "fraud_before": 7,
+      "n_after": 1206,
+      "fraud_after": 279,
+      "client_id": 1
+    },
+    {
+      "requested": "kmeans_smote_enn",
+      "applied": "smote_enn",
+      "fallback": "KMeansSMOTE failed: RuntimeError",
+      "n_before": 8717,
+      "fraud_before": 5,
+      "n_after": 11311,
+      "fraud_after": 2613,
+      "client_id": 2
+    }
+  ],
+  "partition_meta": {
+    "clients_topped_up": 1,
+    "effective_fraud_floor": 5,
+    "n_train": 9967,
+    "n_val": 1424,
+    "n_test": 2848,
+    "n_fraud_train": 17,
+    "n_fraud_val": 2,
+    "n_fraud_test": 5,
+    "num_clients": 3,
+    "dirichlet_alpha": 0.5,
+    "seed": 42
+  },
+  "aggregation_weights": [
+    [
+      0.030291292221877906,
+      0.09343043074062597,
+      0.8762782770374962
+    ],
+    [
+      0.030291292221877906,
+      0.09343043074062597,
+      0.8762782770374962
+    ]
+  ],
+  "drift_records": [
+    {
+      "round": 1,
+      "client_id": 0,
+      "loss": 0.10342495143413544,
+      "ph_stat": 0.0,
+      "severity": 0.0,
+      "detected": 0,
+      "trust": 1.0
+    },
+    {
+      "round": 1,
+      "client_id": 1,
+      "loss": 0.09864223748445511,
+      "ph_stat": 0.0,
+      "severity": 0.0,
+      "detected": 0,
+      "trust": 1.0
+    },
+    {
+      "round": 1,
+      "client_id": 2,
+      "loss": 0.05846593330303828,
+      "ph_stat": 0.0,
+      "severity": 0.0,
+      "detected": 0,
+      "trust": 1.0
+    },
+    {
+      "round": 2,
+      "client_id": 0,
+      "loss": 0.047615302726626396,
+      "ph_stat": 0.0,
+      "severity": 0.0,
+      "detected": 0,
+      "trust": 1.0
+    },
+    {
+      "round": 2,
+      "client_id": 1,
+      "loss": 0.04623302221298218,
+      "ph_stat": 0.0,
+      "severity": 0.0,
+      "detected": 0,
+      "trust": 1.0
+    },
+    {
+      "round": 2,
+      "client_id": 2,
+      "loss": 0.04211968787842327,
+      "ph_stat": 0.0,
+      "severity": 0.0,
+      "detected": 0,
+      "trust": 1.0
+    }
+  ],
+  "drift_round": 2,
+  "client_sizes": [
+    391,
+    1206,
+    11311
+  ],
+  "n_params": 248833,
+  "elapsed_sec": 143.42684698104858,
+  "threshold": 0.4125461009120942
+}
