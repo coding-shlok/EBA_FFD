@@ -153,11 +153,16 @@ def run_federated_training(config=None, X_cache=None, verbose=None):
         server.save_final_model()
 
     final = server.round_metrics[-1] if server.round_metrics else {}
-    # Select the reported "best" round by VALIDATION F1, never test F1 — the
-    # test set must stay untouched by any decision that affects what gets
-    # reported. Falls back to test F1 only if a run has no validation set.
+    # Select the reported "best" round by VALIDATION PR-AUC, never test
+    # PR-AUC — the test set must stay untouched by any decision that affects
+    # what gets reported. PR-AUC, not F1, because F1 is scored at a threshold
+    # that's re-optimised against validation every round, which lets near-peak
+    # val F1 be hit most rounds — so it ties across rounds and max() silently
+    # falls back to the first (earliest) tied round. PR-AUC has no threshold
+    # to re-optimise against, so it actually discriminates which round is
+    # best. Falls back to test PR-AUC only if a run has no validation set.
     def _select_key(m):
-        return m["val_f1"] if m.get("val_f1") is not None else m["f1"]
+        return m["val_pr_auc"] if m.get("val_pr_auc") is not None else m["pr_auc"]
     best = max(server.round_metrics, key=_select_key) \
             if server.round_metrics else {}
 

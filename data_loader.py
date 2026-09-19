@@ -34,7 +34,15 @@ warnings.filterwarnings("ignore")
 
 
 DATASET_URL = "https://storage.googleapis.com/download.tensorflow.org/data/creditcard.csv"
-DATA_PATH   = os.path.join(os.path.dirname(__file__), "data", "creditcard.csv")
+# EBA_FFD_DATA_PATH lets a deployment keep data in a separate folder from the
+# code (e.g. Altair's recommended layout: code and data uploaded/unzipped as
+# two independent directories) without editing this file. Set it to the full
+# path of creditcard.csv before importing this module. Falls back to the
+# original co-located "<this file's dir>/data/creditcard.csv" otherwise.
+DATA_PATH = os.environ.get(
+    "EBA_FFD_DATA_PATH",
+    os.path.join(os.path.dirname(__file__), "data", "creditcard.csv"),
+)
 
 # v1 module-level defaults, kept so the original entry points still work
 NUM_CLIENTS     = 4

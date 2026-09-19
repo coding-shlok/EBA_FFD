@@ -92,8 +92,8 @@ class FederatedServer:
         self.round_metrics    = []
         self.weight_history   = []   # aggregation weights per round
         self.drift_records    = []   # detector output per client per round
-        self.best_f1          = 0.0
-        self.best_weights     = None
+        self.best_score        = 0.0
+        self.best_weights      = None
 
         if self.config.get("verbose", True):
             print(f"[Server] Global model on {device} | "
@@ -274,30 +274,42 @@ class FederatedServer:
                                   zero_division=0),
         }
 
-        # Validation F1 at the same threshold — this, not test F1, is what
-        # selects the "best round" below. Picking the round by its TEST score
-        # is model selection on the test set and inflates every federated
-        # number in the paper; the threshold was already calibrated on
-        # validation, so scoring validation here is free.
-        val_f1 = None
+        # Validation metrics — these, not test metrics, are what select the
+        # "best round" below. Picking the round by its TEST score is model
+        # selection on the test set and inflates every federated number in
+        # the paper; the threshold was already calibrated on validation, so
+        # scoring validation here is free.
+        #
+        # Selection uses val PR-AUC, not val F1. F1 is scored at a threshold
+        # that calibrate_threshold() just picked specifically to MAXIMISE val
+        # F1 out of 400 candidates — that search is thorough enough that
+        # near-peak val F1 is achievable most rounds, so val F1 ties across
+        # many/most rounds and max() silently defaults to the first (earliest)
+        # tied round regardless of which round is actually best. PR-AUC has no
+        # threshold to re-optimise against, so it isn't subject to the same
+        # tie, and it's already the paper's stated headline metric.
+        val_f1 = val_pr_auc = None
         if X_val is not None and len(np.unique(y_val)) > 1:
             val_probs = self._predict_proba(X_val)
             val_preds = (val_probs >= thr).astype(int)
-            val_f1 = f1_score(y_val, val_preds, zero_division=0)
-        metrics["val_f1"] = val_f1
+            val_f1     = f1_score(y_val, val_preds, zero_division=0)
+            val_pr_auc = average_precision_score(y_val, val_probs)
+        metrics["val_f1"]     = val_f1
+        metrics["val_pr_auc"] = val_pr_auc
 
         if self.config.get("verbose", True):
             tag = f"Round {round_num}" if round_num is not None else "Final"
-            val_str = f" val_f1={val_f1:.4f}" if val_f1 is not None else ""
+            val_str = (f" val_f1={val_f1:.4f} val_pr_auc={val_pr_auc:.4f}"
+                      if val_f1 is not None else "")
             print(f"[Server] {tag}: recall={metrics['recall']:.4f} "
                   f"f1={metrics['f1']:.4f} auc={metrics['auc']:.4f} "
                   f"pr_auc={metrics['pr_auc']:.4f} thr={thr:.4g}{val_str}")
 
-        # Best-model selection uses validation F1 (falls back to test F1 only
-        # when no validation set was supplied at all).
-        selection_score = val_f1 if val_f1 is not None else metrics["f1"]
-        if save_best and selection_score > self.best_f1:
-            self.best_f1      = selection_score
+        # Best-model selection uses validation PR-AUC (falls back to test
+        # PR-AUC only when no validation set was supplied at all).
+        selection_score = val_pr_auc if val_pr_auc is not None else metrics["pr_auc"]
+        if save_best and selection_score > self.best_score:
+            self.best_score      = selection_score
             self.best_weights = get_model_weights(self.global_model)
             torch.save(self.best_weights,
                        os.path.join(MODEL_DIR, "best_global_model.pt"))

@@ -145,7 +145,6 @@ def stage_ablations(cfg, preset, seeds, with_drift=False):
     if with_drift:
         c["drift_enabled"] = True
         c["drift_round"]   = max(2, c["num_rounds"] // 2)
-        c["drift_clients"] = [0]
 
     variants = (["full", "no_adaptive"] if with_drift
                 else None)   # drift condition only needs the adaptive contrast
@@ -161,7 +160,19 @@ def stage_ablations(cfg, preset, seeds, with_drift=False):
         seed_cfg = dict(c)
         seed_cfg["seed"] = seed
         data = load_federated_data(seed_cfg)
-        res = run_ablations(c, data=data, seeds=(seed,),
+        if with_drift:
+            # Target the LARGEST client, not a fixed index. Dirichlet
+            # partitioning can hand any fixed index a near-empty client at
+            # some seeds (e.g. seed 43 gave "client 0" just 41 of ~40,000
+            # training rows) — drifting a client that small is a no-op
+            # regardless of severity or aggregation strategy, since its
+            # aggregation weight is already negligible either way. The
+            # largest client is where adaptive aggregation's protection
+            # actually matters, and it stays meaningful at every seed.
+            sizes = [len(cd["X"]) for cd in data["clients"]]
+            drift_target = max(range(len(sizes)), key=lambda i: sizes[i])
+            seed_cfg["drift_clients"] = [drift_target]
+        res = run_ablations(seed_cfg, data=data, seeds=(seed,),
                             variants=variants, with_drift=with_drift)
         for variant, runs in res.items():
             out.setdefault(variant, []).extend(runs)

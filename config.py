@@ -59,8 +59,22 @@ BASE_CONFIG = {
     # in the first place (see README "Known limitations" #5). The ablation
     # variant "with_lstm" (ablations.py) reproduces the discarded architecture
     # for the paper's record of why it was cut.
+    #
+    # use_cnn ALSO defaults to False as of the architecture re-check below.
+    # The stationary ablation table (Table 2) always showed the CNN-and-LSTM-
+    # both-removed "MLP head only" variant beating the CNN-only "full system"
+    # (+0.0243 F1 at n=2 seeds), but that row was never promoted to the
+    # default because it looked like it could be a small-sample fluke.
+    # Rechecked at n=3 seeds specifically to settle it: plain-MLP beat CNN-only
+    # at every seed (42: 0.7416 vs 0.7159, 43: 0.8042 vs 0.7812, 44: 0.7978 vs
+    # 0.7771) -- a consistent ~2-2.5pt F1 gain, not noise. Same logic as the
+    # LSTM cut: fewer parameters means less surface for DP-SGD's per-sample
+    # noise to corrupt, and the raw 30-feature vector has no spatial locality
+    # for 1D convolution to exploit either. The ablation variant "with_cnn"
+    # should be added to reproduce the discarded CNN-only architecture for the
+    # record, symmetric with "with_lstm" above.
     "model": {
-        "use_cnn":           True,
+        "use_cnn":           False,
         "use_lstm":          False,
         "cnn_channels":      64,
         "cnn_kernel":        3,
@@ -74,7 +88,18 @@ BASE_CONFIG = {
     },
 
     # ── Loss (ablation switch) ────────────────────────────────────────────────
-    "loss":                  "focal",   # "focal" | "bce"
+    # Default changed from "focal" to "bce" after the full-scale GPU run
+    # (100% data, 3 seeds): the no_focal ablation arm scored F1 0.8170 vs the
+    # focal-loss "full" system's 0.7936 (+0.0234 F1, plus recall 0.7891 vs
+    # 0.7483) -- the single largest gain in the whole ablation table, bigger
+    # than any architecture change. At pilot scale (20% data) this ablation
+    # was roughly neutral (+0.001), so it was left as the non-default arm;
+    # at full data volume, KMeans-SMOTE/ENN balancing alone is evidently
+    # enough to handle the class-imbalance problem Focal Loss was added for,
+    # and Focal Loss's extra down-weighting was fighting the DP-SGD noise
+    # for no benefit. See ablations.py's "with_focal" variant, which now
+    # reproduces the discarded default for the record.
+    "loss":                  "bce",   # "focal" | "bce"
     "focal_alpha":           0.25,
     "focal_gamma":           2.0,
 
@@ -93,11 +118,29 @@ BASE_CONFIG = {
     "seed":                  42,    # seed of a single run
 
     # ── Concept-drift injection (used to VALIDATE contribution #1) ────────────
+    # mode="covariate_shift" was the original default but is neutralised almost
+    # entirely by the CNN's GroupNorm layer before it ever reaches the loss —
+    # verified empirically: the detector saw a flat PH statistic of 0.0 across
+    # 5 rounds of injected shift. label_flip ("a fraud ring changes tactics")
+    # bypasses that: it corrupts the label itself, which the detector picks up
+    # immediately. level=1.5 (75% flip rate) was swept against 0.5/1.0/2.0 —
+    # it's the point where vanilla FedAvg's global model actually collapses
+    # under sustained drift (F1 -> ~0.05-0.15) while Adaptive FedAvg stays
+    # healthy (F1 ~0.75), reproducing at 2 seeds; 2.0 is too extreme and
+    # sometimes collapses adaptive too, so it isn't a reliable demonstration.
+    #
+    # drift_clients is set dynamically by whichever caller enables drift_enabled
+    # (see run_all_experiments.py's stage_ablations) — it should target the
+    # LARGEST client, not a fixed index. Under Dirichlet partitioning a fixed
+    # index can land on a near-empty client at some seeds (seed 43 gave
+    # "client 0" just 41 of ~40,000 rows once), making the whole comparison a
+    # no-op regardless of severity, since that client's aggregation weight is
+    # already negligible either way. [0] below is only the fallback default.
     "drift_enabled":         False,
     "drift_round":           5,          # round at which drift begins
-    "drift_clients":         [0],        # which banks drift
-    "drift_mode":            "covariate_shift",  # covariate_shift|label_flip|scale
-    "drift_level":           0.5,
+    "drift_clients":         [0],        # which banks drift (fallback; see above)
+    "drift_mode":            "label_flip",  # covariate_shift|label_flip|scale
+    "drift_level":           1.5,
 
     # ── Misc ──────────────────────────────────────────────────────────────────
     "device":                "cuda" if torch.cuda.is_available() else "cpu",

@@ -11,29 +11,49 @@ hand.
 
 Variants
 ────────
-  full             The proposed system: CNN, no BiLSTM. The reference row.
-  with_lstm        Adds the BiLSTM block back on top of the CNN — this is the
-                   architecture v2 originally shipped with. capacity_sweep.py
-                   found it scores 0.15 F1 / 0.09 PR-AUC worse than "full" at
-                   matched epsilon: DP-SGD noise on the DPLSTM's per-timestep
-                   per-sample gradients dominates its own signal, and the
-                   dataset has no genuine per-account sequence for it to model
-                   anyway (see README "Known limitations" #5). Kept as an
-                   ablation so the paper documents why it was cut, rather than
-                   silently disappearing.
-  no_cnn           Raw features fed to a BiLSTM as a length-D sequence (CNN
-                   off, LSTM explicitly on regardless of the "full" default).
-                   Isolates the convolutional block.
+  full             The proposed system: plain MLP head, no CNN, no BiLSTM.
+                   The reference row. This was NOT the original default —
+                   capacity_sweep.py's first pass only compared CNN-only
+                   against CNN+BiLSTM and picked CNN-only, but the "mlp_only"
+                   row in this same ablation table kept showing MLP beating
+                   CNN-only too. Re-checked at n=3 seeds specifically to rule
+                   out a small-sample fluke: MLP beat CNN-only at every seed
+                   (42: 0.7416 vs 0.7159, 43: 0.8042 vs 0.7812, 44: 0.7978 vs
+                   0.7771 F1) — a consistent ~2-2.5pt gain, not noise. Same
+                   underlying cause as cutting the LSTM: fewer parameters is
+                   less surface for DP-SGD's per-sample noise to corrupt, and
+                   the raw 30-feature vector has no spatial locality for a 1D
+                   convolution to exploit either.
+  with_cnn         Adds the CNN block back (no BiLSTM) — this is the
+                   architecture "full" used to be, before the re-check above.
+                   Kept as an ablation so the paper documents why it was cut,
+                   rather than silently disappearing, mirroring "with_lstm".
+  with_lstm        Adds the CNN and BiLSTM blocks back on top of the MLP —
+                   this is the architecture v2 originally shipped with.
+                   capacity_sweep.py found it scores 0.15 F1 / 0.09 PR-AUC
+                   worse than CNN-only at matched epsilon: DP-SGD noise on the
+                   DPLSTM's per-timestep per-sample gradients dominates its
+                   own signal, and the dataset has no genuine per-account
+                   sequence for it to model anyway (see README "Known
+                   limitations" #5).
+  lstm_only        Raw features fed to a BiLSTM as a length-D sequence (CNN
+                   off, LSTM explicitly on). Isolates the recurrent block
+                   without the CNN's feature extraction ahead of it.
   no_balancing     No SMOTE/ENN. Isolates the resampling stage. Expect a large
                    recall drop at a 0.17% base rate.
-  no_focal         Plain BCE instead of Focal Loss. Isolates the loss function.
+  with_focal       Adds Focal Loss back in place of plain BCE -- this is the
+                   loss function "full" used to be. Full-scale evidence (n=3
+                   seeds) showed plain BCE scoring F1 0.8170 vs Focal Loss's
+                   0.7936 (+0.0234, plus recall 0.7891 vs 0.7483) -- the
+                   largest single gain in this table -- so BCE is now the
+                   config.py default and this variant reproduces the
+                   discarded one for the record, mirroring "with_cnn".
   no_dp            DP disabled entirely. NOT a competing system — it has no
                    privacy guarantee. Its role is to measure the utility cost of
                    privacy, i.e. the gap between full and no_dp IS the price of
                    epsilon.
   no_adaptive      Vanilla FedAvg instead of drift-aware aggregation. Isolates
                    contribution #1.
-  mlp_only         Neither CNN nor LSTM. Lower bound on the architecture.
 
 NOTE ON ARCHITECTURE VARIANTS: every variant that touches use_cnn/use_lstm
 states BOTH flags explicitly rather than overriding just one and relying on
@@ -64,24 +84,28 @@ from training_loop import run_federated_training
 
 ABLATION_VARIANTS = {
     "full": {
-        "label": "Full system (proposed: CNN, no BiLSTM)",
+        "label": "Full system (proposed: MLP, no CNN/BiLSTM)",
         "overrides": {},
     },
+    "with_cnn": {
+        "label": "+ CNN block (discarded convolutional variant)",
+        "overrides": {"model": {"use_cnn": True, "use_lstm": False}},
+    },
     "with_lstm": {
-        "label": "+ BiLSTM block (discarded recurrent variant)",
+        "label": "+ CNN and BiLSTM blocks (discarded recurrent variant)",
         "overrides": {"model": {"use_cnn": True, "use_lstm": True}},
     },
-    "no_cnn": {
-        "label": "− CNN block",
+    "lstm_only": {
+        "label": "+ BiLSTM only (no CNN)",
         "overrides": {"model": {"use_cnn": False, "use_lstm": True}},
     },
     "no_balancing": {
         "label": "− KMeans-SMOTE/ENN balancing",
         "overrides": {"balancing": "none"},
     },
-    "no_focal": {
-        "label": "− Focal Loss (plain BCE)",
-        "overrides": {"loss": "bce"},
+    "with_focal": {
+        "label": "+ Focal Loss (discarded loss function)",
+        "overrides": {"loss": "focal"},
     },
     "no_dp": {
         "label": "− Differential privacy (no guarantee)",
@@ -90,10 +114,6 @@ ABLATION_VARIANTS = {
     "no_adaptive": {
         "label": "− Adaptive aggregation (vanilla FedAvg)",
         "overrides": {"aggregation": "fedavg"},
-    },
-    "mlp_only": {
-        "label": "− CNN and BiLSTM (MLP head only)",
-        "overrides": {"model": {"use_cnn": False, "use_lstm": False}},
     },
 }
 
@@ -138,7 +158,15 @@ def run_single_ablation(variant, base_config, data=None, seed=42,
         cfg["drift_enabled"] = True
 
     results, *_ = run_federated_training(cfg, X_cache=data)
-    metrics = dict(results["best_metrics"])
+    # Under drift, "best round by validation" structurally always prefers the
+    # PRE-drift round — injected corruption can only hurt, so the pre-drift
+    # round is the best any variant can ever score, for every aggregation
+    # strategy alike, making full vs no_adaptive identical by construction
+    # regardless of severity (verified empirically: both selected round 1
+    # at every drift level tested). The scientific question here is sustained
+    # performance DURING the drift regime, so report the FINAL round instead.
+    # Stationary ablations keep best-by-validation, where that bias doesn't apply.
+    metrics = dict(results["final_metrics"] if with_drift else results["best_metrics"])
     metrics["variant"]      = variant
     metrics["label"]        = spec["label"]
     metrics["seed"]         = seed
@@ -189,7 +217,7 @@ if __name__ == "__main__":
     data = load_federated_data(cfg)
 
     res = run_ablations(cfg, data=data, seeds=(42,),
-                        variants=["full", "no_balancing", "mlp_only"])
+                        variants=["full", "no_balancing", "with_cnn"])
     for v, runs in res.items():
         if runs:
             print(f"{v:16s} f1={runs[0].get('f1', 0):.4f}")

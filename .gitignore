@@ -3,5 +3,14 @@ __pycache__/
 .DS_Store
 venv/
 data/creditcard.csv
-results/checkpoints/
+~$*
 .claude/settings.local.json
+
+# Checkpoints: keep the small, real full-scale + capacity-sweep run records
+# (they're the raw evidence behind the paper's reported numbers) but not the
+# quick/smoke-preset scratch checkpoints, which are large in aggregate and
+# not meaningful on their own.
+results/checkpoints/*
+!results/checkpoints/.gitkeep
+!results/checkpoints/full_*.json
+!results/checkpoints/capacity_sweep_*.json

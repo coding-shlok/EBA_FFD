@@ -35,8 +35,8 @@ HEADERS = {"precision": "Precision", "recall": "Recall", "f1": "F1",
            "auc": "ROC-AUC", "pr_auc": "PR-AUC"}
 
 # Methods that pool raw data or ignore privacy entirely. NOTE: architecture
-# ablations (no_lstm, no_cnn, mlp_only) still run under DP and are NOT listed
-# here — only no_dp drops the guarantee.
+# ablations (with_cnn, with_lstm, lstm_only) still run under DP and are NOT
+# listed here — only no_dp drops the guarantee.
 NO_PRIVACY = {"xgboost", "logreg", "centralized_nn", "local_only", "no_dp"}
 
 
@@ -314,13 +314,17 @@ def report_privacy(privacy_plan, epsilon_spent=None, prefix="table4_privacy"):
 
 
 # ── Figures ───────────────────────────────────────────────────────────────────
+# White background throughout (not the earlier dark theme) — these figures go
+# straight into the paper/report, which are printed on white, not viewed on
+# screen against a dark dashboard.
 def _style(ax, title, xlabel, ylabel):
-    ax.set_title(title, color="white", fontsize=13)
-    ax.set_xlabel(xlabel, color="white", fontsize=11)
-    ax.set_ylabel(ylabel, color="white", fontsize=11)
-    ax.set_facecolor("#1a1d27")
-    ax.tick_params(colors="white")
-    ax.spines[:].set_color("#444")
+    ax.set_title(title, color="#1a1d27", fontsize=13)
+    ax.set_xlabel(xlabel, color="#1a1d27", fontsize=11)
+    ax.set_ylabel(ylabel, color="#1a1d27", fontsize=11)
+    ax.set_facecolor("#ffffff")
+    ax.tick_params(colors="#1a1d27")
+    ax.spines[:].set_color("#888")
+    ax.grid(axis="y", color="#e0e0e0", linewidth=0.6, zorder=0)
 
 
 def plot_comparison_bars(results_by_method, labels=None,
@@ -336,7 +340,7 @@ def plot_comparison_bars(results_by_method, labels=None,
     width = 0.8 / len(methods)
 
     fig, ax = plt.subplots(figsize=(12, 6))
-    fig.patch.set_facecolor("#0f1117")
+    fig.patch.set_facecolor("#ffffff")
     cmap = plt.get_cmap("tab10")
 
     for i, m in enumerate(methods):
@@ -345,13 +349,13 @@ def plot_comparison_bars(results_by_method, labels=None,
         errs = [agg.get(k, {}).get("std", 0) for k in show]
         ax.bar(x + i * width - 0.4 + width / 2, vals, width, yerr=errs,
                capsize=3, label=labels.get(m, m), color=cmap(i % 10),
-               edgecolor="white", linewidth=0.6)
+               edgecolor="#1a1d27", linewidth=0.6, zorder=3)
 
     ax.set_xticks(x)
-    ax.set_xticklabels([HEADERS[k] for k in show], color="white", fontsize=12)
+    ax.set_xticklabels([HEADERS[k] for k in show], color="#1a1d27", fontsize=12)
     ax.set_ylim(0, 1.05)
     _style(ax, "Proposed system vs baselines (mean ± std over seeds)", "", "Score")
-    ax.legend(facecolor="#2a2d3a", labelcolor="white", fontsize=9, ncol=2)
+    ax.legend(facecolor="#ffffff", edgecolor="#888", labelcolor="#1a1d27", fontsize=9, ncol=2)
     plt.tight_layout()
     path = os.path.join(PLOT_DIR, filename)
     plt.savefig(path, dpi=150, bbox_inches="tight", facecolor=fig.get_facecolor())
@@ -380,17 +384,17 @@ def plot_ablation_deltas(ablation_results, reference="full",
     items.sort(key=lambda t: t[1])
 
     fig, ax = plt.subplots(figsize=(11, 0.6 * len(items) + 3))
-    fig.patch.set_facecolor("#0f1117")
+    fig.patch.set_facecolor("#ffffff")
     ys     = np.arange(len(items))
     deltas = [i[1] for i in items]
     errs   = [i[2] for i in items]
-    colors = ["#EF4444" if d < 0 else "#10B981" for d in deltas]
+    colors = ["#DC2626" if d < 0 else "#059669" for d in deltas]
 
     ax.barh(ys, deltas, xerr=errs, capsize=3, color=colors,
-            edgecolor="white", linewidth=0.6)
-    ax.axvline(0, color="white", linewidth=1)
+            edgecolor="#1a1d27", linewidth=0.6, zorder=3)
+    ax.axvline(0, color="#1a1d27", linewidth=1)
     ax.set_yticks(ys)
-    ax.set_yticklabels([i[0] for i in items], color="white", fontsize=10)
+    ax.set_yticklabels([i[0] for i in items], color="#1a1d27", fontsize=10)
     _style(ax, "Ablation: ΔF1 when each component is removed", "ΔF1 vs full system", "")
     plt.tight_layout()
     path = os.path.join(PLOT_DIR, filename)
@@ -405,7 +409,7 @@ def plot_scaling_curves(scaling_results, filename="scaling_curves.png"):
         return None
 
     fig, axes = plt.subplots(1, 3, figsize=(17, 5))
-    fig.patch.set_facecolor("#0f1117")
+    fig.patch.set_facecolor("#ffffff")
 
     panels = [(["recall", "f1", "pr_auc"], "Detection quality", "Score"),
               (["mean_sigma"],             "Mean per-bank DP noise", r"$\bar{\sigma}$"),
@@ -423,9 +427,9 @@ def plot_scaling_curves(scaling_results, filename="scaling_curves.png"):
         ax.set_xticks(ks)
         ax.set_xticklabels([str(k) for k in ks])
         _style(ax, title, "Number of banks", ylab)
-        ax.legend(facecolor="#2a2d3a", labelcolor="white", fontsize=9)
+        ax.legend(facecolor="#ffffff", edgecolor="#888", labelcolor="#1a1d27", fontsize=9)
 
-    plt.suptitle("Scalability across federation size", color="white",
+    plt.suptitle("Scalability across federation size", color="#1a1d27",
                  fontsize=15, y=1.02)
     plt.tight_layout()
     path = os.path.join(PLOT_DIR, filename)
